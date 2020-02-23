@@ -83,15 +83,14 @@ def plot_stream(st: Stream, outfile: str = None, **kwargs) -> plt.Axes:
     :return: ax containing plot
     :rtype: plt.Axes
     """
-    ax = st.plot(outfile=outfile, **kwargs)
-    return ax
+    st.plot(outfile=outfile, **kwargs)
 
 
 def basic_processing(st: Stream, remove_trend: bool = True,
                      remove_mean: bool = True, filter_type: str = None,
                      **kwargs) -> None:
     """
-    Process an obspy stream using frequent methods. Can remove the mean, 
+    Process an obspy stream using frequent methods. Can remove the mean,
     remove the trend, and filter the data.
     :param st: Obspy Stream containing data to process
     :type st: Stream
