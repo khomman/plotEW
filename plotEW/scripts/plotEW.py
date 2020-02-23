@@ -1,6 +1,5 @@
 import click
 
-import matplotlib.pyplot as plt
 from obspy import UTCDateTime
 
 import os
@@ -50,7 +49,7 @@ def config(ctx):
 @main.command('plot')
 @click.option('-ts', '--starttime', help="Starttime for plotting")
 @click.option('-tf', '--endtime', help="Endtime for plotting")
-@click.option('-s', '--station', help="SEED id for station")
+@click.option('-s', '--station', required=True, help="SEED id for station")
 @click.option('-p', '--process_data', nargs=2, type=float, help="Values for "
               "minimum and maximum frequency for bandpass filter")
 @click.option('-f', '--filename', help="filename to save to")
@@ -73,6 +72,61 @@ def plot(ctx, starttime, endtime, station, process_data, filename):
                                 freqmin=process_data[0],
                                 freqmax=process_data[1])
     plotEW.plot_stream(st, outfile=filename)
+
+
+@main.command('plot_helicorder', help="Plot a helicorder style plot. "
+              "Can provide a start and end time or specify the --last_day "
+              "flag to plot the last 24 hours of data")
+@click.option('-s', '--station', required=True, help="SEED id for station")
+@click.option('-ts', '--starttime', help="Starttime for plotting")
+@click.option('-tf', '--endtime', help="Endtime for plotting")
+@click.option('-p', '--process_data', nargs=2, type=float, help="Values for "
+              "minimum and maximum frequency for bandpass filter")
+@click.option('-f', '--filename', help="filename to save to")
+@click.option('--last_day', is_flag=True, help="Plot the last 24 hours of "
+                                               "data")
+@click.pass_context
+def plot_helicorder_recent(ctx, station, starttime, endtime, process_data,
+                           filename, last_day):
+    host = ctx.obj['host']
+    port = ctx.obj['port']
+
+    if not host or not port:
+        raise RuntimeError("You must define the host and port to the "
+                           "earthworm wave server. Type plotEW --help for "
+                           "more information")
+
+    if not last_day and not starttime and not endtime:
+        raise RuntimeError("You must provide either start and end times or "
+                           "the --last_day flag")
+
+    if last_day:
+        cur_time = UTCDateTime.now()
+        endtime = UTCDateTime(f"{cur_time.date}:{cur_time.hour}:00:00")
+        starttime = endtime - 86400
+
+    if starttime and not endtime:
+        starttime = UTCDateTime(starttime)
+        endtime = starttime + 86400
+
+    if endtime and not starttime:
+        endtime = UTCDateTime(endtime)
+        starttime = endtime - 86400
+
+    chan = station.split('.')[-1]
+    if chan[0] != "L":
+        print("High sample rate data may take a minute to gather...")
+        print("Consider using lower sample rate data for faster plotting")
+
+    client = plotEW.init_client(host, int(port))
+    st = plotEW.get_waveforms(client, station, starttime, endtime)
+
+    if process_data:
+        plotEW.basic_processing(st, filter_type='bandpass',
+                                freqmin=process_data[0],
+                                freqmax=process_data[1])
+
+    plotEW.plot_helicorder(st[0], outfile=filename)
 
 
 def run():
