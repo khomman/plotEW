@@ -50,7 +50,8 @@ def config(ctx):
 @click.option('-ts', '--starttime', required=True,
               help="Starttime for plotting")
 @click.option('-tf', '--endtime', help="Endtime for plotting")
-@click.option('-d', 'duration', help="Length of seismogram to (seconds)"
+@click.option('-d', '--duration', type=int,
+              help="Length of seismogram to (seconds)"
               "Overrides endtime flag")
 @click.option('-s', '--station', required=True, help="SEED id for station")
 @click.option('-p', '--process_data', nargs=2, type=float, help="Values for "
@@ -143,6 +144,45 @@ def plot_helicorder_recent(ctx, station, starttime, endtime, process_data,
 
     plotEW.plot_helicorder(st[0], outfile=filename, title=title,
                            color=['k', 'r', 'g', 'b'])
+
+
+@main.command('save_waveforms', help="Download waveforms from an earthworm"
+              "wave server")
+@click.option('-s', '--station', required=True, help="Station to download")
+@click.option('-ts', '--starttime', required=True,
+              help="Starttime for plotting")
+@click.option('-tf', '--endtime', help="Endtime for plotting")
+@click.option('-d', '--duration', type=int,
+              help="Length of seismogram to (seconds)"
+              "Overrides endtime flag")
+@click.option('-p', '--process_data', nargs=2, type=float, help="Values for "
+              "minimum and maximum frequency for bandpass filter")
+@click.option('-f', '--format', default='MSEED', help="Format of downloaded "
+              "data.  See obspy Stream.write for more information")
+@click.pass_context
+def save_waveforms(ctx, station, starttime, endtime, duration, process_data,
+                   format):
+    host = ctx.obj['host']
+    port = ctx.obj['port']
+
+    if not host or not port:
+        raise RuntimeError("You must define the host and port to the "
+                           "earthworm wave server. Type plotEW --help for "
+                           "more information")
+
+    if starttime and endtime:
+        starttime = UTCDateTime(starttime)
+        endtime = UTCDateTime(endtime)
+
+    if starttime and duration:
+        starttime = UTCDateTime(starttime)
+        endtime = starttime + duration
+
+    client = plotEW.init_client(host, int(port))
+    st = plotEW.get_waveforms(client, station, starttime, endtime)
+
+    for tr in st:
+        tr.write(f'{tr.id}.{format}', format=format)
 
 
 def run():
