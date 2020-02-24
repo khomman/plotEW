@@ -47,14 +47,17 @@ def config(ctx):
 
 
 @main.command('plot')
-@click.option('-ts', '--starttime', help="Starttime for plotting")
+@click.option('-ts', '--starttime', required=True,
+              help="Starttime for plotting")
 @click.option('-tf', '--endtime', help="Endtime for plotting")
+@click.option('-d', 'duration', help="Length of seismogram to (seconds)"
+              "Overrides endtime flag")
 @click.option('-s', '--station', required=True, help="SEED id for station")
 @click.option('-p', '--process_data', nargs=2, type=float, help="Values for "
               "minimum and maximum frequency for bandpass filter")
 @click.option('-f', '--filename', help="filename to save to")
 @click.pass_context
-def plot(ctx, starttime, endtime, station, process_data, filename):
+def plot(ctx, starttime, endtime, duration, station, process_data, filename):
     host = ctx.obj['host']
     port = ctx.obj['port']
 
@@ -63,9 +66,16 @@ def plot(ctx, starttime, endtime, station, process_data, filename):
                            "earthworm wave server. Type plotEW --help for "
                            "more information")
 
+    if starttime and endtime:
+        starttime = UTCDateTime(starttime)
+        endtime = UTCDateTime(endtime)
+
+    if starttime and duration:
+        starttime = UTCDateTime(starttime)
+        endtime = starttime + duration
+
     client = plotEW.init_client(host, int(port))
-    st = plotEW.get_waveforms(client, station, UTCDateTime(starttime),
-                              UTCDateTime(endtime))
+    st = plotEW.get_waveforms(client, station, starttime, endtime)
 
     if process_data:
         plotEW.basic_processing(st, filter_type='bandpass',
