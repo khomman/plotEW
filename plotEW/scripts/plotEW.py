@@ -75,8 +75,11 @@ def plot(ctx, starttime, endtime, station, process_data, filename):
 
 
 @main.command('plot_helicorder', help="Plot a helicorder style plot. "
-              "Can provide a start and end time or specify the --last_day "
-              "flag to plot the last 24 hours of data")
+              "Can provide a start and/or end time or specify the --last_day "
+              "flag to plot the last 24 hours of data.  If starttime is "
+              "specified but no end time then the endtime will be calculated "
+              "to be 1 day after starttime. The behavior is similiar if "
+              "endtime is provided but not starttime.")
 @click.option('-s', '--station', required=True, help="SEED id for station")
 @click.option('-ts', '--starttime', help="Starttime for plotting")
 @click.option('-tf', '--endtime', help="Endtime for plotting")
@@ -120,13 +123,16 @@ def plot_helicorder_recent(ctx, station, starttime, endtime, process_data,
 
     client = plotEW.init_client(host, int(port))
     st = plotEW.get_waveforms(client, station, starttime, endtime)
+    title = (f'{st[0].id}  {starttime.strftime("%Y-%m-%dT%H:%M:%S")} '
+             f' - {endtime.strftime("%Y-%m-%dT%H:%M:%S")}')
 
     if process_data:
         plotEW.basic_processing(st, filter_type='bandpass',
                                 freqmin=process_data[0],
                                 freqmax=process_data[1])
 
-    plotEW.plot_helicorder(st[0], outfile=filename)
+    plotEW.plot_helicorder(st[0], outfile=filename, title=title,
+                           color=['k', 'r', 'g', 'b'])
 
 
 def run():
