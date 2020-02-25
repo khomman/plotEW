@@ -142,8 +142,8 @@ def plot_helicorder_recent(ctx, station, starttime, endtime, process_data,
                                 freqmin=process_data[0],
                                 freqmax=process_data[1])
 
-    plotEW.plot_helicorder(st[0], outfile=filename, title=title,
-                           color=['k', 'r', 'g', 'b'])
+    plotEW.plot_helicorder(st, outfile=filename, title=title,
+                           color=['k', 'r', 'g', 'b'], merge=True)
 
 
 @main.command('save_waveforms', help="Download waveforms from an earthworm"
