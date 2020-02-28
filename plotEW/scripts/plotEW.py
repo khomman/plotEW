@@ -54,11 +54,11 @@ def config(ctx):
               help="Length of seismogram to (seconds)"
               "Overrides endtime flag")
 @click.option('-s', '--station', required=True, help="SEED id for station")
-@click.option('-p', '--process_data', nargs=2, type=float, help="Values for "
+@click.option('-bp', '--filter', nargs=2, type=float, help="Values for "
               "minimum and maximum frequency for bandpass filter")
 @click.option('-f', '--filename', help="filename to save to")
 @click.pass_context
-def plot(ctx, starttime, endtime, duration, station, process_data, filename):
+def plot(ctx, starttime, endtime, duration, station, filter, filename):
     host = ctx.obj['host']
     port = ctx.obj['port']
 
@@ -78,10 +78,10 @@ def plot(ctx, starttime, endtime, duration, station, process_data, filename):
     client = plotEW.init_client(host, int(port))
     st = plotEW.get_waveforms(client, station, starttime, endtime)
 
-    if process_data:
-        plotEW.basic_processing(st, filter_type='bandpass',
-                                freqmin=process_data[0],
-                                freqmax=process_data[1])
+    if filter:
+        plotEW.filter(st, filter_type='bandpass',
+                      freqmin=filter[0],
+                      freqmax=filter[1])
     plotEW.plot_stream(st, outfile=filename)
 
 
@@ -94,13 +94,13 @@ def plot(ctx, starttime, endtime, duration, station, process_data, filename):
 @click.option('-s', '--station', required=True, help="SEED id for station")
 @click.option('-ts', '--starttime', help="Starttime for plotting")
 @click.option('-tf', '--endtime', help="Endtime for plotting")
-@click.option('-p', '--process_data', nargs=2, type=float, help="Values for "
+@click.option('-bp', '--filter', nargs=2, type=float, help="Values for "
               "minimum and maximum frequency for bandpass filter")
 @click.option('-f', '--filename', help="filename to save to")
 @click.option('--last_day', is_flag=True, help="Plot the last 24 hours of "
                                                "data")
 @click.pass_context
-def plot_helicorder_recent(ctx, station, starttime, endtime, process_data,
+def plot_helicorder_recent(ctx, station, starttime, endtime, filter,
                            filename, last_day):
     host = ctx.obj['host']
     port = ctx.obj['port']
@@ -137,10 +137,10 @@ def plot_helicorder_recent(ctx, station, starttime, endtime, process_data,
     title = (f'{st[0].id}  {starttime.strftime("%Y-%m-%dT%H:%M:%S")} '
              f' - {endtime.strftime("%Y-%m-%dT%H:%M:%S")}')
 
-    if process_data:
-        plotEW.basic_processing(st, filter_type='bandpass',
-                                freqmin=process_data[0],
-                                freqmax=process_data[1])
+    if filter:
+        plotEW.filter(st, filter_type='bandpass',
+                                freqmin=filter[0],
+                                freqmax=filter[1])
 
     plotEW.plot_helicorder(st, outfile=filename, title=title,
                            color=['k', 'r', 'g', 'b'], merge=True)
@@ -155,12 +155,12 @@ def plot_helicorder_recent(ctx, station, starttime, endtime, process_data,
 @click.option('-d', '--duration', type=int,
               help="Length of seismogram to (seconds)"
               "Overrides endtime flag")
-@click.option('-p', '--process_data', nargs=2, type=float, help="Values for "
+@click.option('-bp', '--filter', nargs=2, type=float, help="Values for "
               "minimum and maximum frequency for bandpass filter")
 @click.option('-f', '--format', default='MSEED', help="Format of downloaded "
               "data.  See obspy Stream.write for more information")
 @click.pass_context
-def save_waveforms(ctx, station, starttime, endtime, duration, process_data,
+def save_waveforms(ctx, station, starttime, endtime, duration, filter,
                    format):
     host = ctx.obj['host']
     port = ctx.obj['port']
@@ -181,6 +181,9 @@ def save_waveforms(ctx, station, starttime, endtime, duration, process_data,
     client = plotEW.init_client(host, int(port))
     st = plotEW.get_waveforms(client, station, starttime, endtime)
 
+    if filter:
+        plotEW.filter(st, filter_type="bandpass", freqmin=filter[0],
+                      freqmax=filter[1])
     for tr in st:
         tr.write(f'{tr.id}.{format}', format=format)
 
