@@ -68,7 +68,7 @@ def plot_helicorder(tr: Trace, outfile: str = None, **kwargs) -> plt.Axes:
     :rtype: plt.Axes
     """
     fig = tr.plot(type='dayplot', interval=60, show_y_UTC_label=False,
-                 outfile=outfile, **kwargs)
+                  outfile=outfile, **kwargs)
     return fig
 
 
@@ -119,7 +119,8 @@ def filter(st: Stream, remove_trend: bool = True,
 
 # remove response using inv or RESP file
 def remove_response_inv(inv: Union[Inventory, str], st: Stream,
-                        starttime: UTCDateTime, endtime: UTCDateTime,
+                        starttime: UTCDateTime = None,
+                        endtime: UTCDateTime = None,
                         output: str = "DISP", **kwargs) -> None:
     """
     Remove the response from obspy stream object using an inventory object

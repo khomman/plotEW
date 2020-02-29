@@ -1,10 +1,23 @@
 import os
 
-from obspy import read
+from obspy import read, read_inventory
 from obspy.clients.earthworm import Client
 
+import pytest
 
 import plotEW as pew
+
+
+@pytest.fixture()
+def stream():
+    st = read('data/PE.PAKC..HHZ.MSEED')
+    return st
+
+
+@pytest.fixture()
+def tmp_dir(tmpdir):
+    p = tmpdir.mkdir('tstFig')
+    return p
 
 
 def test_init_client():
@@ -20,39 +33,46 @@ def test_read_station_file():
     assert stas[2] == 'LD.ALLY..HHZ'
 
 
-def test_plot_helicorder():
-    st = read('data/PE_PAKC_Z.MSEED')
-    pew.plot_helicorder(st[0], outfile="data/PAKC_Heli.pdf")
-    assert os.path.exists('data/PAKC_Heli.pdf')
+def test_plot_helicorder(stream, tmp_dir):
+    pew.plot_helicorder(stream[0], outfile=f'{tmp_dir}/PAKC_Heli.pdf')
+    assert os.path.exists(f'{tmp_dir}/PAKC_Heli.pdf')
 
 
-def test_plot_stream():
-    st = read('data/PE_PAKC_Z.MSEED')
-    pew.plot_stream(st, outfile='data/PAKC_Stream_Plot.pdf')
-    assert os.path.exists('data/PAKC_Stream_Plot.pdf')
+def test_plot_stream(stream, tmp_dir):
+    pew.plot_stream(stream, outfile=f'{tmp_dir}/PAKC_Stream_Plot.pdf')
+    assert os.path.exists(f'{tmp_dir}/PAKC_Stream_Plot.pdf')
 
 
-def test_filter():
-    st = read('data/PE_PAKC_Z.MSEED')
-    pew.filter(st, filter_type="bandpass", freqmin=1, freqmax=10)
-    assert len(st) == 1
-    assert len(st[0].stats.processing) == 3
-    assert 'demean' in st[0].stats.processing[0]
-    assert 'linear' in st[0].stats.processing[1]
-    assert 'filter' in st[0].stats.processing[2]
+def test_filter(stream):
+    pew.filter(stream, filter_type="bandpass", freqmin=1, freqmax=10)
+    assert len(stream) == 1
+    assert len(stream[0].stats.processing) == 3
+    assert 'demean' in stream[0].stats.processing[0]
+    assert 'linear' in stream[0].stats.processing[1]
+    assert 'filter' in stream[0].stats.processing[2]
 
 
-def test_remove_response_inv():
-    pass
+def test_remove_response_inv(stream):
+    # Test inventory as string
+    pew.remove_response_inv('data/PAKC_test.xml', stream)
+    assert len(stream[0].stats.processing) == 1
+    assert 'remove_response' in stream[0].stats.processing[0]
+
+
+def test_remove_response_inv_as_object(stream):
+    inv = read_inventory('data/PAKC_test.xml')
+    pew.remove_response_inv(inv, stream)
+    assert len(stream[0].stats.processing) == 1
+    assert 'remove_response' in stream[0].stats.processing[0]
+
+
+def test_remove_response_inv_start_end_time(stream):
+    pew.remove_response_inv('data/PAKC_test.xml', stream,
+                            starttime=stream[0].stats.starttime,
+                            endtime=stream[0].stats.endtime)
+    assert len(stream[0].stats.processing) == 1
+    assert 'remove_response' in stream[0].stats.processing[0]
 
 
 def test_remove_response_resp():
-    pass
-
-
-def teardown():
-    print('teardown')
-
-
-if __name__ == "__main__":
     pass

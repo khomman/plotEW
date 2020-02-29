@@ -138,9 +138,8 @@ def plot_helicorder_recent(ctx, station, starttime, endtime, filter,
              f' - {endtime.strftime("%Y-%m-%dT%H:%M:%S")}')
 
     if filter:
-        plotEW.filter(st, filter_type='bandpass',
-                                freqmin=filter[0],
-                                freqmax=filter[1])
+        plotEW.filter(st, filter_type='bandpass', freqmin=filter[0],
+                      freqmax=filter[1])
 
     plotEW.plot_helicorder(st, outfile=filename, title=title,
                            color=['k', 'r', 'g', 'b'], merge=True)
