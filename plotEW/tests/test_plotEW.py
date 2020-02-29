@@ -74,5 +74,7 @@ def test_remove_response_inv_start_end_time(stream):
     assert 'remove_response' in stream[0].stats.processing[0]
 
 
-def test_remove_response_resp():
-    pass
+def test_remove_response_resp(stream):
+    pew.remove_response_resp('data/RESP.PE.PAKC.--.HHZ', stream)
+    assert len(stream[0].stats.processing) == 1
+    assert 'simulate' in stream[0].stats.processing[0]

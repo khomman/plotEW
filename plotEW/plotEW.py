@@ -147,10 +147,24 @@ def remove_response_inv(inv: Union[Inventory, str], st: Stream,
     st.remove_response(inventory=inv, output=output, **kwargs)
 
 
-# def remove_response_resp(resp: Union[RESP, str], st: Stream,
-#                          starttime: UTCDateTime, endtime: UTCDateTime) -> None:
-#     """
-#     Remove the response from an obspy stream using a RESP file
+def remove_response_resp(resp: str, st: Stream, output: str = 'DIS',
+                         pre_filt: tuple = None, **kwargs) -> None:
+    """
+    Remove the response from an obspy stream using a RESP file
+    :param resp: filename of response file
+    :type resp: str
+    :param st: Obspy stream
+    :type st: Stream
+    :param output: Output Units (DISP (displacment [m]), VEL (velocity [m/s]),
+                   ACC (acceleration [m/s**2]))
+    :type output: str
+    :param pre_filt: Filter band to apply before deconvolution. See obspy
+        simulate_seismometer. Example: (0.005, 0.006, 30.0, 35.0) Default: None
+    :type prefilt: tuple
+    :param kwargs: kwargs to be passed onto Obspy stream.simulate
+    """
+    seedresp = {'filename': resp,
+                'units': output}
 
-#     """
-#     pass
+    st.simulate(paz_remove=None, pre_filt=pre_filt, seedresp=seedresp,
+                **kwargs)
