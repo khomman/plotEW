@@ -1,8 +1,8 @@
-from typing import List
+from typing import List, Union
 
 import matplotlib.pyplot as plt
 
-from obspy import UTCDateTime, Stream, Trace
+from obspy import UTCDateTime, Stream, Trace, Inventory, read_inventory
 from obspy.clients.earthworm import Client
 
 
@@ -67,9 +67,9 @@ def plot_helicorder(tr: Trace, outfile: str = None, **kwargs) -> plt.Axes:
     :return: ax containing plot
     :rtype: plt.Axes
     """
-    ax = tr.plot(type='dayplot', interval=60, show_y_UTC_label=False,
-                 outfile=outfile, **kwargs)
-    return ax
+    fig = tr.plot(type='dayplot', interval=60, show_y_UTC_label=False,
+                  outfile=outfile, **kwargs)
+    return fig
 
 
 def plot_stream(st: Stream, outfile: str = None, **kwargs) -> plt.Axes:
@@ -83,14 +83,15 @@ def plot_stream(st: Stream, outfile: str = None, **kwargs) -> plt.Axes:
     :return: ax containing plot
     :rtype: plt.Axes
     """
-    st.plot(outfile=outfile, **kwargs)
+    fig = st.plot(outfile=outfile, **kwargs)
+    return fig
 
 
-def basic_processing(st: Stream, remove_trend: bool = True,
-                     remove_mean: bool = True, filter_type: str = None,
-                     **kwargs) -> None:
+def filter(st: Stream, remove_trend: bool = True,
+           remove_mean: bool = True, filter_type: str = None,
+           **kwargs) -> None:
     """
-    Process an obspy stream using frequent methods. Can remove the mean,
+    Filter an obspy stream using frequent methods. Can remove the mean,
     remove the trend, and filter the data.
     :param st: Obspy Stream containing data to process
     :type st: Stream
@@ -114,3 +115,56 @@ def basic_processing(st: Stream, remove_trend: bool = True,
 
     if filter_type:
         st.filter(filter_type, **kwargs)
+
+
+# remove response using inv or RESP file
+def remove_response_inv(inv: Union[Inventory, str], st: Stream,
+                        starttime: UTCDateTime = None,
+                        endtime: UTCDateTime = None,
+                        output: str = "DISP", **kwargs) -> None:
+    """
+    Remove the response from obspy stream object using an inventory object
+    :param inv: Obspy Inventory object or path to a staXML
+    :type inv: Inventory or str
+    :param st: Obspy Stream object
+    :type st: Stream
+    :param starttime: Starttime of data. Used to ensure correct response
+    :type starttime: UTCDateTime
+    :param endtime: Endtime of data. Used to ensure correct response
+    :type endtime: UTCDateTime
+    :param output: Output Units (DISP (displacment [m]), VEL (velocity [m/s]),
+                   ACC (acceleration [m/s**2]))
+    :type output: str
+    :param **kwargs: Keyword arguments passed to obspy Trace.remove_response
+    :return: None
+    """
+    if isinstance(inv, str):
+        inv = read_inventory(inv)
+
+    if starttime and endtime:
+        inv = inv.select(starttime=starttime, endtime=endtime)
+
+    st.remove_response(inventory=inv, output=output, **kwargs)
+
+
+def remove_response_resp(resp: str, st: Stream, output: str = 'DIS',
+                         pre_filt: tuple = None, **kwargs) -> None:
+    """
+    Remove the response from an obspy stream using a RESP file
+    :param resp: filename of response file
+    :type resp: str
+    :param st: Obspy stream
+    :type st: Stream
+    :param output: Output Units (DISP (displacment [m]), VEL (velocity [m/s]),
+                   ACC (acceleration [m/s**2]))
+    :type output: str
+    :param pre_filt: Filter band to apply before deconvolution. See obspy
+        simulate_seismometer. Example: (0.005, 0.006, 30.0, 35.0) Default: None
+    :type prefilt: tuple
+    :param kwargs: kwargs to be passed onto Obspy stream.simulate
+    """
+    seedresp = {'filename': resp,
+                'units': output}
+
+    st.simulate(paz_remove=None, pre_filt=pre_filt, seedresp=seedresp,
+                **kwargs)
