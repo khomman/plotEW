@@ -4,9 +4,10 @@ import matplotlib.pyplot as plt
 
 from obspy import UTCDateTime, Stream, Trace, Inventory, read_inventory
 from obspy.clients.earthworm import Client
+from obspy.clients.fdsn import Client as IRIS_Client
 
 
-def init_client(server: str, port: int, **kwargs):
+def init_client(server: str, port: int, from_iris: bool = False, **kwargs):
     """
     Initialize an earthworm client on the given server and port
     :param server: IP address for the machine running earthworm wave server
@@ -17,7 +18,10 @@ def init_client(server: str, port: int, **kwargs):
     :return: Obspy Client object
     :rtype: Client
     """
-    client = Client(server, port, **kwargs)
+    if from_iris:
+        client = IRIS_Client('IRIS')
+    else:
+        client = Client(server, port, **kwargs)
     return client
 
 
