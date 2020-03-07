@@ -33,7 +33,7 @@ wave server.  To do this you must provide the the --host and --port command
 for every action.
 ```
 bash
-plotEW --host ew.server.ip --port 11111 plot
+plotEW --host ew.server.ip --port 11111 plotEW_command
 ```
 
 Alternatively, you can you can use the `config` command and plotEW will remember the host and port
@@ -43,7 +43,7 @@ bash
 plotEW config
 ```
 
-config will prompt you for the information and save the values in a config file
+config will prompt you for the earthworm wave server ip and port then save the values in a config file
 for future use.
 
 The current plotEW commands are as follows:
@@ -61,6 +61,10 @@ The current plotEW commands are as follows:
 
 **4:** plotEW save_waveforms
         - Get data from an earthworm wave server and save to disk as any obspy-supported format.
+
+
+The `plot`, `plot_helicorder`, and `save_waveforms` commands also allow getting data from
+[IRIS](https://www.iris.edu/hq/) using the --from_iris flag.
 
 
 Please use the --help function for more information.

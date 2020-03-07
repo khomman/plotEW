@@ -46,7 +46,9 @@ def config(ctx):
         f.write(f"{host}\n{port}")
 
 
-@main.command('plot')
+@main.command('plot', help="Plot a single obspy stream.  Can provide a "
+              "starttime and endtime or a starttime and the duration for the "
+              "data you would like to plot.")
 @click.option('-ts', '--starttime', required=True,
               help="Starttime for plotting")
 @click.option('-tf', '--endtime', help="Endtime for plotting")
@@ -57,12 +59,15 @@ def config(ctx):
 @click.option('-bp', '--filter', nargs=2, type=float, help="Values for "
               "minimum and maximum frequency for bandpass filter")
 @click.option('-f', '--filename', help="filename to save to")
+@click.option('--from_iris', is_flag=True, help="Use IRIS instead of an "
+              "earthworm waveserver")
 @click.pass_context
-def plot(ctx, starttime, endtime, duration, station, filter, filename):
+def plot(ctx, starttime, endtime, duration, station, filter, filename,
+         from_iris):
     host = ctx.obj['host']
     port = ctx.obj['port']
 
-    if not host or not port:
+    if not host or not port and not from_iris:
         raise RuntimeError("You must define the host and port to the "
                            "earthworm wave server. Type plotEW --help for "
                            "more information")
@@ -75,7 +80,7 @@ def plot(ctx, starttime, endtime, duration, station, filter, filename):
         starttime = UTCDateTime(starttime)
         endtime = starttime + duration
 
-    client = plotEW.init_client(host, int(port))
+    client = plotEW.init_client(host, int(port), from_iris=from_iris)
     st = plotEW.get_waveforms(client, station, starttime, endtime)
 
     if filter:
@@ -99,13 +104,15 @@ def plot(ctx, starttime, endtime, duration, station, filter, filename):
 @click.option('-f', '--filename', help="filename to save to")
 @click.option('--last_day', is_flag=True, help="Plot the last 24 hours of "
                                                "data")
+@click.option('--from_iris', is_flag=True, help="Use IRIS instead of an "
+              "earthworm waveserver")
 @click.pass_context
 def plot_helicorder_recent(ctx, station, starttime, endtime, filter,
-                           filename, last_day):
+                           filename, last_day, from_iris):
     host = ctx.obj['host']
     port = ctx.obj['port']
 
-    if not host or not port:
+    if not host or not port and not from_iris:
         raise RuntimeError("You must define the host and port to the "
                            "earthworm wave server. Type plotEW --help for "
                            "more information")
@@ -116,7 +123,8 @@ def plot_helicorder_recent(ctx, station, starttime, endtime, filter,
 
     if last_day:
         cur_time = UTCDateTime.now()
-        endtime = UTCDateTime(f"{cur_time.date}:{cur_time.hour}:00:00")
+        endtime = UTCDateTime(f"{cur_time.date}:{cur_time.hour}:"
+                              f"{cur_time.minute}:00")
         starttime = endtime - 86400
 
     if starttime and not endtime:
@@ -127,12 +135,16 @@ def plot_helicorder_recent(ctx, station, starttime, endtime, filter,
         endtime = UTCDateTime(endtime)
         starttime = endtime - 86400
 
+    if starttime and endtime:
+        starttime = UTCDateTime(starttime)
+        endtime = UTCDateTime(endtime)
+
     chan = station.split('.')[-1]
     if chan[0] != "L":
         print("High sample rate data may take a minute to gather...")
         print("Consider using lower sample rate data for faster plotting")
 
-    client = plotEW.init_client(host, int(port))
+    client = plotEW.init_client(host, int(port), from_iris=from_iris)
     st = plotEW.get_waveforms(client, station, starttime, endtime)
     title = (f'{st[0].id}  {starttime.strftime("%Y-%m-%dT%H:%M:%S")} '
              f' - {endtime.strftime("%Y-%m-%dT%H:%M:%S")}')
@@ -152,19 +164,21 @@ def plot_helicorder_recent(ctx, station, starttime, endtime, filter,
               help="Starttime for plotting")
 @click.option('-tf', '--endtime', help="Endtime for plotting")
 @click.option('-d', '--duration', type=int,
-              help="Length of seismogram to (seconds)"
+              help="Length of seismogram to download (seconds)"
               "Overrides endtime flag")
 @click.option('-bp', '--filter', nargs=2, type=float, help="Values for "
               "minimum and maximum frequency for bandpass filter")
 @click.option('-f', '--format', default='MSEED', help="Format of downloaded "
               "data.  See obspy Stream.write for more information")
+@click.option('--from_iris', is_flag=True, help="Use IRIS instead of an "
+              "earthworm waveserver")
 @click.pass_context
 def save_waveforms(ctx, station, starttime, endtime, duration, filter,
-                   format):
+                   format, from_iris):
     host = ctx.obj['host']
     port = ctx.obj['port']
 
-    if not host or not port:
+    if not host or not port and not from_iris:
         raise RuntimeError("You must define the host and port to the "
                            "earthworm wave server. Type plotEW --help for "
                            "more information")
@@ -177,7 +191,7 @@ def save_waveforms(ctx, station, starttime, endtime, duration, filter,
         starttime = UTCDateTime(starttime)
         endtime = starttime + duration
 
-    client = plotEW.init_client(host, int(port))
+    client = plotEW.init_client(host, int(port), from_iris=from_iris)
     st = plotEW.get_waveforms(client, station, starttime, endtime)
 
     if filter:
