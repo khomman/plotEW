@@ -48,16 +48,22 @@ def config(ctx):
 
 @main.command('plot', help="Plot a single obspy stream.  Can provide a "
               "starttime and endtime or a starttime and the duration for the "
-              "data you would like to plot.")
+              "data you would like to plot."
+              "Date Format: YYYY-MM-DDTHH:mm:SS)"
+              "Filter Format: -bp 0.01 2"
+              "Example: plotEW plot -s IU.SSPA.00.BHZ -ts 2020-06-15T12:30:00"
+              "-d 500 --from_iris")
 @click.option('-ts', '--starttime', required=True,
-              help="Starttime for plotting")
-@click.option('-tf', '--endtime', help="Endtime for plotting")
+              help="Starttime for plotting (Date Format: YYYY-MM-DDTHH:mm:SS)")
+@click.option('-tf', '--endtime', help="Endtime for plotting "
+                "Date Format: YYYY-MM-DDTHH:mm:SS)")
 @click.option('-d', '--duration', type=int,
-              help="Length of seismogram to (seconds)"
+              help="Length of seismogram to plot (seconds)"
               "Overrides endtime flag")
 @click.option('-s', '--station', required=True, help="SEED id for station")
 @click.option('-bp', '--filter', nargs=2, type=float, help="Values for "
-              "minimum and maximum frequency for bandpass filter")
+              "minimum and maximum frequency for bandpass filter"
+              "[-bp 0.01 2] will filter between 0.01 and 2 Hz")
 @click.option('-f', '--filename', help="filename to save to")
 @click.option('--from_iris', is_flag=True, help="Use IRIS instead of an "
               "earthworm waveserver")
@@ -95,7 +101,10 @@ def plot(ctx, starttime, endtime, duration, station, filter, filename,
               "flag to plot the last 24 hours of data.  If starttime is "
               "specified but no end time then the endtime will be calculated "
               "to be 1 day after starttime. The behavior is similiar if "
-              "endtime is provided but not starttime.")
+              "endtime is provided but not starttime."
+              "--station must only contain one channel"
+              "Date Format: YYYY-MM-DDTHH:mm:SS"
+              "Filter format: -bp 0.01 2")
 @click.option('-s', '--station', required=True, help="SEED id for station")
 @click.option('-ts', '--starttime', help="Starttime for plotting")
 @click.option('-tf', '--endtime', help="Endtime for plotting")
@@ -153,9 +162,12 @@ def plot_helicorder_recent(ctx, station, starttime, endtime, filter,
         plotEW.filter(st, filter_type='bandpass', freqmin=filter[0],
                       freqmax=filter[1])
 
-    plotEW.plot_helicorder(st, outfile=filename, title=title,
-                           color=['k', 'r', 'g', 'b'], merge=True)
-
+    try:
+        plotEW.plot_helicorder(st, outfile=filename, title=title,
+                               color=['k', 'r', 'g', 'b'], merge=True)
+    except ValueError as e:
+        print(e)
+        print("Error: Helicorder can only plot 1 channel")
 
 @main.command('save_waveforms', help="Download waveforms from an earthworm"
               "wave server")
